@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f14;
+    --bg2:      #13161e;
+    --bg3:      #1a1e2a;
+    --border:   #252a38;
+    --border2:  #2e3447;
+    --text:     #e2e6f0;
+    --text2:    #8891aa;
+    --text3:    #555e78;
+    --accent:   #4f8ef7;
+    --accent2:  #3a6fd8;
+    --green:    #22c55e;
+    --yellow:   #f59e0b;
+    --red:      #ef4444;
+    --radius:   10px;
+    --radius-sm:6px;
+    --shadow:   0 4px 24px rgba(0,0,0,.45);
+    --transition: 0.18s cubic-bezier(.4,0,.2,1);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  /* ── Layout ── */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,15,20,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 17px; letter-spacing: -.3px; color: var(--text);
+    text-decoration: none;
+  }
+  .logo svg { color: var(--accent); }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+
+  main {
+    flex: 1;
+    padding: 36px 28px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative; flex: 1; min-width: 200px; max-width: 340px;
+  }
+  .search-wrap svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text3); pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%; background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--radius-sm);
+    padding: 7px 10px 7px 32px; outline: none; font-size: 13px;
+    transition: border-color var(--transition);
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--text3); }
+
+  .filter-labels { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .filter-chip {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    border: 1px solid transparent; cursor: pointer;
+    font-size: 12px; font-weight: 500;
+    transition: all var(--transition); background: var(--bg2);
+    color: var(--text2);
+    border-color: var(--border);
+  }
+  .filter-chip:hover { border-color: var(--border2); color: var(--text); }
+  .filter-chip.active { color: #fff; }
+  .filter-chip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Grid ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    position: relative; overflow: hidden;
+    cursor: pointer;
+    text-decoration: none; color: inherit;
+  }
+  .card:hover {
+    border-color: var(--border2);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
+  .card-icon-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .card-icon {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .card-icon img { width: 100%; height: 100%; object-fit: contain; }
+  .card-title {
+    font-weight: 600; font-size: 14px; letter-spacing: -.15px;
+    color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card-url {
+    font-size: 11px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .card-actions {
+    display: flex; align-items: center; gap: 4px;
+    opacity: 0; transition: opacity var(--transition);
+    flex-shrink: 0;
+  }
+  .card:hover .card-actions { opacity: 1; }
+
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg3);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all var(--transition);
+  }
+  .icon-btn:hover { background: var(--border2); color: var(--text); }
+  .icon-btn.danger:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: var(--red); }
+
+  .card-description {
+    font-size: 12.5px; color: var(--text2); line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; min-height: 20px;
+  }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+  .card-labels { display: flex; gap: 5px; flex-wrap: wrap; }
+  .label-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 500; letter-spacing: .01em;
+  }
+
+  /* ── Health indicator ── */
+  .health {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text3);
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .health-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text3);
+    transition: background .3s;
+  }
+  .health-dot.up { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .health-dot.down { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .health-dot.checking { background: var(--yellow); animation: pulse 1.2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all var(--transition); border: 1px solid transparent;
+    line-height: 1; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-ghost {
+    background: transparent; color: var(--text2);
+    border-color: var(--border2);
+  }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn-danger { background: rgba(239,68,68,.1); color: var(--red); border-color: rgba(239,68,68,.3); }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5,7,12,.75); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; transition: opacity var(--transition);
+    pointer-events: none;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 14px; width: 100%; max-width: 500px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    transform: translateY(12px) scale(.98);
+    transition: transform var(--transition);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-backdrop.open .modal { transform: none; }
+
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 20px 0;
+  }
+  .modal-title { font-weight: 700; font-size: 16px; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer {
+    padding: 0 20px 20px;
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  /* ── Form elements ── */
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: .03em; text-transform: uppercase; }
+  .form-input, .form-textarea {
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--text); border-radius: var(--radius-sm);
+    padding: 8px 11px; font-size: 13px; outline: none;
+    transition: border-color var(--transition);
+    font-family: inherit; width: 100%;
+  }
+  .form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 72px; }
+  .form-hint { font-size: 11px; color: var(--text3); }
+
+  /* ── Label editor in modal ── */
+  .labels-picker {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .label-pick-item {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    border: 2px solid transparent;
+    transition: all var(--transition);
+    user-select: none;
+  }
+  .label-pick-item.selected { border-color: rgba(255,255,255,.5) !important; }
+
+  /* ── Labels management panel ── */
+  .labels-panel-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .label-list-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--bg3); border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .label-list-row .dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+  .label-list-row span { flex: 1; font-size: 13px; }
+  .label-list-row .color-swatch {
+    width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+  }
+
+  /* ── Login ── */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 36px; width: 100%; max-width: 360px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .login-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .login-sub { font-size: 13px; color: var(--text2); }
+  .login-error { font-size: 12px; color: var(--red); display: none; }
+  .login-error.show { display: block; }
+
+  /* ── Empty / loading state ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    padding: 64px 0; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    color: var(--text3);
+  }
+  .empty-state svg { opacity: .3; }
+  .empty-state p { font-size: 14px; }
+  .loading-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px;
+  }
+  .skeleton {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); height: 150px;
+    animation: shimmer 1.4s infinite linear;
+    background-image: linear-gradient(90deg, var(--bg2) 0%, var(--bg3) 50%, var(--bg2) 100%);
+    background-size: 200% 100%;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ── Toast ── */
+  #toast-container {
+    position: fixed; bottom: 20px; right: 20px; z-index: 999;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+  }
+  .toast {
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--text); padding: 10px 16px; border-radius: 8px;
+    font-size: 13px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 8px;
+    animation: slideIn .2s ease; max-width: 300px;
+  }
+  .toast.success { border-color: rgba(34,197,94,.4); }
+  .toast.error   { border-color: rgba(239,68,68,.4); }
+  @keyframes slideIn { from{transform:translateX(20px);opacity:0} to{transform:none;opacity:1} }
+
+  /* ── Add-card floating btn ── */
+  .fab {
+    position: fixed; bottom: 24px; right: 24px; z-index: 90;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(79,142,247,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; transition: all var(--transition);
+    display: none;
+  }
+  .fab:hover { background: var(--accent2); transform: scale(1.08); }
+  .fab.visible { display: flex; }
+
+  /* ── Color picker in label form ── */
+  .color-row { display: flex; align-items: center; gap: 8px; }
+  .color-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-preset {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color var(--transition);
+    flex-shrink: 0;
+  }
+  .color-preset:hover, .color-preset.selected { border-color: #fff; }
+
+  /* ── Section title ── */
+  .section-meta {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px;
+  }
+  .count-badge {
+    font-size: 11px; color: var(--text3); background: var(--bg3);
+    padding: 2px 7px; border-radius: 99px; border: 1px solid var(--border);
+  }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: var(--border); margin: 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    main { padding: 20px 16px; }
+    header { padding: 0 16px; }
+    .toolbar { gap: 8px; }
+    .search-wrap { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="login-screen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f8ef7">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      Hub
+    </div>
+    <div class="login-sub">Sign in to manage your services</div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input id="login-user" class="form-input" type="text" autocomplete="username" placeholder="admin">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="login-pass" class="form-input" type="password" autocomplete="current-password" placeholder="••••••">
+      <span id="login-err" class="login-error">Invalid credentials</span>
+    </div>
+    <button class="btn btn-primary" id="login-btn">Sign in</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none">
+  <header>
+    <a class="logo" href="#">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      Hub
+    </a>
+    <div class="header-actions">
+      <span id="header-status" style="font-size:12px;color:var(--text3)"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-manage-labels" style="display:none">Labels</button>
+      <button class="btn btn-ghost btn-sm" id="btn-add-card" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Add Service
+      </button>
+      <button class="btn btn-ghost btn-sm" id="btn-login" style="display:none">Sign in</button>
+      <button class="btn btn-ghost btn-sm" id="btn-logout" style="display:none">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="search-input" type="search" placeholder="Search services…">
+      </div>
+      <div class="filter-labels" id="filter-labels"></div>
+    </div>
+
+    <div class="section-meta">
+      <span id="cards-count" class="count-badge">0 services</span>
+      <span id="health-summary" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+
+    <div id="cards-container" class="cards-grid" style="margin-top:12px">
+      <!-- loading skeletons -->
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+  </main>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-add" title="Add service" style="display:none">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- Card modal -->
+<div class="modal-backdrop" id="card-modal-backdrop">
+  <div class="modal" id="card-modal" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
+    <div class="modal-header">
+      <div class="modal-title" id="card-modal-title">Add Service</div>
+      <button class="icon-btn" id="card-modal-close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="card-modal-id">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input class="form-input" id="card-name" placeholder="Grafana">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL *</label>
+        <input class="form-input" id="card-url" type="url" placeholder="http://192.168.1.10:3000">
+        <span class="form-hint">Used for health checks and as the link</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="card-desc" placeholder="Metrics and dashboards…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <input class="form-input" id="card-icon" placeholder="📊  or  https://…/icon.png">
+        <span class="form-hint">Emoji or image URL</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Labels</label>
+        <div class="labels-picker" id="card-labels-picker"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="card-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="card-modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-backdrop" id="delete-modal-backdrop">
+  <div class="modal" id="delete-modal" style="max-width:380px" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title">Remove Service</div>
+      <button class="icon-btn" id="delete-modal-close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text2);font-size:13.5px">Remove <strong id="delete-card-name" style="color:var(--text)"></strong> from the hub? This can't be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="delete-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Labels management modal -->
+<div class="modal-backdrop" id="labels-modal-backdrop">
+  <div class="modal" id="labels-modal" style="max-width:440px" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title">Manage Labels</div>
+      <button class="icon-btn" id="labels-modal-close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Create new label -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.03em">New Label</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Name</label>
+            <input class="form-input" id="new-label-name" placeholder="backend" maxlength="30">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <div class="color-row">
+              <input type="color" id="new-label-color" value="#4f8ef7"
+                style="width:36px;height:34px;border-radius:6px;border:1px solid var(--border2);background:none;cursor:pointer;padding:2px;">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="create-label-btn" style="margin-bottom:0;height:34px">Add</button>
+        </div>
+        <div class="color-presets" id="color-presets"></div>
+      </div>
+      <!-- List -->
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px">Existing Labels</div>
+        <div class="labels-panel-list" id="labels-panel-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="labels-modal-close2">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════
+const state = {
+  cards: [],
+  labels: [],
+  authed: false,
+  username: null,
+  filterLabels: new Set(),
+  search: '',
+  health: {},        // cardId -> 'checking'|'up'|'down'
+  deleteId: null,
+  editId: null,
+};
+
+const COLOR_PRESETS = [
+  '#4f8ef7','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4',
+  '#f97316','#ec4899','#14b8a6','#64748b'
+];
+
+// ════════════════════════════════════════════
+//  API helpers
+// ════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+const GET    = p      => api('GET', p);
+const POST   = (p,b)  => api('POST', p, b);
+const PUT    = (p,b)  => api('PUT', p, b);
+const DELETE = p      => api('DELETE', p);
+
+// ════════════════════════════════════════════
+//  Toast
+// ════════════════════════════════════════════
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      ${type==='success'
+        ? '<polyline points="20 6 9 17 4 12"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
+    </svg>
+    <span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.style.opacity = '0', 2700);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════
+async function checkAuth() {
+  const me = await GET('/api/auth/me').catch(() => ({authenticated:false}));
+  state.authed = me.authenticated;
+  state.username = me.username || null;
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const { authed } = state;
+  document.getElementById('btn-login').style.display     = authed ? 'none'  : '';
+  document.getElementById('btn-logout').style.display    = authed ? ''      : 'none';
+  document.getElementById('btn-add-card').style.display  = authed ? ''      : 'none';
+  document.getElementById('btn-manage-labels').style.display = authed ? '' : 'none';
+  document.getElementById('fab-add').style.display       = authed ? ''      : 'none';
+  document.getElementById('header-status').textContent   = authed ? `${state.username}` : '';
+}
+
+// Login
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  try {
+    await POST('/api/auth/login', { username: u, password: p });
+    state.authed = true; state.username = u;
+    document.getElementById('login-screen').style.display = 'none';
+    updateAuthUI();
+    renderCards();
+    toast('Signed in');
+  } catch {
+    document.getElementById('login-err').classList.add('show');
+  }
+});
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-btn').click();
+});
+document.getElementById('btn-login').addEventListener('click', () => {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-err').classList.remove('show');
+});
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await POST('/api/auth/logout');
+  state.authed = false; state.username = null;
+  updateAuthUI();
+  renderCards();
+  toast('Signed out');
+});
+
+// ════════════════════════════════════════════
+//  Health checks
+// ════════════════════════════════════════════
+async function checkHealth(card) {
+  state.health[card.id] = 'checking';
+  updateCardHealth(card.id);
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    await fetch(card.url, { method: 'HEAD', mode: 'no-cors', signal: ctrl.signal });
+    clearTimeout(timer);
+    state.health[card.id] = 'up';
+  } catch {
+    state.health[card.id] = 'down';
+  }
+  updateCardHealth(card.id);
+}
+
+function updateCardHealth(id) {
+  const dot = document.querySelector(`[data-card-id="${id}"] .health-dot`);
+  const label = document.querySelector(`[data-card-id="${id}"] .health-label`);
+  const status = state.health[id] || 'checking';
+  if (dot) { dot.className = 'health-dot ' + status; }
+  if (label) { label.textContent = status === 'checking' ? 'checking' : status === 'up' ? 'online' : 'offline'; }
+  updateHealthSummary();
+}
+
+function updateHealthSummary() {
+  const vals = Object.values(state.health);
+  if (!vals.length) { document.getElementById('health-summary').textContent = ''; return; }
+  const up = vals.filter(v=>v==='up').length;
+  const down = vals.filter(v=>v==='down').length;
+  const checking = vals.filter(v=>v==='checking').length;
+  document.getElementById('health-summary').textContent =
+    `${up} online · ${down} offline${checking ? ` · ${checking} checking` : ''}`;
+}
+
+function runHealthChecks() {
+  state.cards.forEach(c => checkHealth(c));
+}
+
+// ════════════════════════════════════════════
+//  Render
+// ════════════════════════════════════════════
+function filteredCards() {
+  let cards = state.cards;
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    cards = cards.filter(c =>
+      c.title.toLowerCase().includes(q) ||
+      (c.description||'').toLowerCase().includes(q) ||
+      (c.url||'').toLowerCase().includes(q)
+    );
+  }
+  if (state.filterLabels.size) {
+    cards = cards.filter(c =>
+      c.labels && c.labels.some(l => state.filterLabels.has(l.id))
+    );
+  }
+  return cards;
+}
+
+function renderFilterChips() {
+  const container = document.getElementById('filter-labels');
+  container.innerHTML = '';
+  state.labels.forEach(l => {
+    const active = state.filterLabels.has(l.id);
+    const chip = document.createElement('div');
+    chip.className = 'filter-chip' + (active ? ' active' : '');
+    chip.style.cssText = active
+      ? `background:${l.color}22;border-color:${l.color}66;color:${l.color}`
+      : '';
+    chip.innerHTML = `<div class="dot" style="background:${l.color}"></div>${l.name}`;
+    chip.addEventListener('click', () => {
+      if (state.filterLabels.has(l.id)) state.filterLabels.delete(l.id);
+      else state.filterLabels.add(l.id);
+      renderFilterChips();
+      renderCards();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function iconHtml(card) {
+  if (!card.icon) {
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3)">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>`;
+  }
+  if (/^https?:\/\//.test(card.icon)) {
+    return `<img src="${escHtml(card.icon)}" alt="" onerror="this.style.display='none'">`;
+  }
+  return escHtml(card.icon);
+}
+
+function renderCards() {
+  const cards = filteredCards();
+  const container = document.getElementById('cards-container');
+  document.getElementById('cards-count').textContent =
+    `${cards.length} service${cards.length !== 1 ? 's' : ''}`;
+
+  if (!cards.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+        <p>${state.search || state.filterLabels.size ? 'No services match your filter.' : 'No services yet.'}</p>
+        ${state.authed && !state.search && !state.filterLabels.size
+          ? `<button class="btn btn-primary btn-sm" onclick="openCardModal()">Add your first service</button>` : ''}
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  cards.forEach(card => {
+    const health = state.health[card.id] || 'checking';
+    const el = document.createElement('a');
+    el.className = 'card';
+    el.href = card.url;
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.setAttribute('data-card-id', card.id);
+    el.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon-title">
+          <div class="card-icon">${iconHtml(card)}</div>
+          <div style="min-width:0">
+            <div class="card-title">${escHtml(card.title)}</div>
+            <div class="card-url">${escHtml(card.url)}</div>
+          </div>
+        </div>
+        ${state.authed ? `
+        <div class="card-actions" onclick="event.preventDefault();event.stopPropagation()">
+          <button class="icon-btn" title="Edit" onclick="openCardModal(${card.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="icon-btn danger" title="Remove" onclick="openDeleteModal(${card.id}, '${escAttr(card.title)}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>` : ''}
+      </div>
+      ${card.description ? `<div class="card-description">${escHtml(card.description)}</div>` : ''}
+      <div class="card-footer">
+        <div class="card-labels">
+          ${(card.labels||[]).map(l => `
+            <span class="label-chip" style="background:${l.color}22;color:${l.color}">
+              ${escHtml(l.name)}
+            </span>`).join('')}
+        </div>
+        <div class="health">
+          <div class="health-dot ${health}"></div>
+          <span class="health-label">${health === 'checking' ? 'checking' : health === 'up' ? 'online' : 'offline'}</span>
+        </div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+// ════════════════════════════════════════════
+//  Card modal
+// ════════════════════════════════════════════
+function openCardModal(id) {
+  state.editId = id || null;
+  document.getElementById('card-modal-title').textContent = id ? 'Edit Service' : 'Add Service';
+  document.getElementById('card-modal-id').value = id || '';
+
+  const card = id ? state.cards.find(c => c.id == id) : null;
+  document.getElementById('card-name').value = card?.title || '';
+  document.getElementById('card-url').value  = card?.url   || '';
+  document.getElementById('card-desc').value = card?.description || '';
+  document.getElementById('card-icon').value = card?.icon || '';
+
+  // Render label picker
+  const picker = document.getElementById('card-labels-picker');
+  const selectedIds = new Set((card?.labels||[]).map(l=>l.id));
+  picker.innerHTML = '';
+  if (!state.labels.length) {
+    picker.innerHTML = '<span style="font-size:12px;color:var(--text3)">No labels yet. Create them in Labels.</span>';
+  }
+  state.labels.forEach(l => {
+    const item = document.createElement('div');
+    item.className = 'label-pick-item' + (selectedIds.has(l.id) ? ' selected' : '');
+    item.style.cssText = `background:${l.color}22;color:${l.color};border-color:${selectedIds.has(l.id)?l.color:'transparent'}`;
+    item.textContent = l.name;
+    item.dataset.labelId = l.id;
+    item.dataset.color = l.color;
+    item.addEventListener('click', () => {
+      item.classList.toggle('selected');
+      const sel = item.classList.contains('selected');
+      item.style.borderColor = sel ? l.color : 'transparent';
+    });
+    picker.appendChild(item);
+  });
+
+  openModal('card-modal-backdrop');
+  document.getElementById('card-name').focus();
+}
+
+document.getElementById('card-modal-save').addEventListener('click', async () => {
+  const id = document.getElementById('card-modal-id').value;
+  const title = document.getElementById('card-name').value.trim();
+  const url   = document.getElementById('card-url').value.trim();
+  const description = document.getElementById('card-desc').value.trim();
+  const icon  = document.getElementById('card-icon').value.trim();
+  if (!title || !url) { toast('Name and URL are required', 'error'); return; }
+
+  const label_ids = [...document.querySelectorAll('.label-pick-item.selected')]
+    .map(el => parseInt(el.dataset.labelId));
+
+  try {
+    if (id) {
+      const updated = await PUT(`/api/cards/${id}`, { title, url, description, icon, label_ids });
+      state.cards = state.cards.map(c => c.id == id ? updated : c);
+      toast('Service updated');
+    } else {
+      const created = await POST('/api/cards', { title, url, description, icon, label_ids });
+      state.cards.push(created);
+      state.health[created.id] = 'checking';
+      checkHealth(created);
+      toast('Service added');
+    }
+    closeModal('card-modal-backdrop');
+    renderCards();
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+});
+
+['card-modal-close','card-modal-cancel'].forEach(id =>
+  document.getElementById(id).addEventListener('click', () => closeModal('card-modal-backdrop')));
+
+// ════════════════════════════════════════════
+//  Delete modal
+// ════════════════════════════════════════════
+function openDeleteModal(id, name) {
+  state.deleteId = id;
+  document.getElementById('delete-card-name').textContent = name;
+  openModal('delete-modal-backdrop');
+}
+
+document.getElementById('delete-confirm').addEventListener('click', async () => {
+  try {
+    await DELETE(`/api/cards/${state.deleteId}`);
+    delete state.health[state.deleteId];
+    state.cards = state.cards.filter(c => c.id !== state.deleteId);
+    closeModal('delete-modal-backdrop');
+    renderCards();
+    toast('Service removed');
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+});
+
+['delete-modal-close','delete-cancel'].forEach(id =>
+  document.getElementById(id).addEventListener('click', () => closeModal('delete-modal-backdrop')));
+
+// ════════════════════════════════════════════
+//  Labels modal
+// ════════════════════════════════════════════
+function openLabelsModal() {
+  // Render color presets
+  const presetsEl = document.getElementById('color-presets');
+  presetsEl.innerHTML = '';
+  COLOR_PRESETS.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'color-preset';
+    el.style.background = c;
+    el.title = c;
+    el.addEventListener('click', () => {
+      document.getElementById('new-label-color').value = c;
+      document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+    presetsEl.appendChild(el);
+  });
+
+  renderLabelsList();
+  openModal('labels-modal-backdrop');
+  document.getElementById('new-label-name').focus();
+}
+
+function renderLabelsList() {
+  const list = document.getElementById('labels-panel-list');
+  if (!state.labels.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:6px 2px">No labels yet.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.labels.forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'label-list-row';
+    row.innerHTML = `
+      <div class="dot" style="background:${l.color}"></div>
+      <span>${escHtml(l.name)}</span>
+      <div class="label-chip" style="background:${l.color}22;color:${l.color}">${escHtml(l.name)}</div>
+      <input type="color" value="${l.color}" data-lid="${l.id}" class="label-color-input"
+        style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;padding:2px;background:none"
+        title="Change color">
+      <button class="icon-btn danger" data-lid="${l.id}" title="Delete label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+        </svg>
+      </button>`;
+    // Color change
+    row.querySelector('.label-color-input').addEventListener('change', async (e) => {
+      const id = e.target.dataset.lid;
+      const label = state.labels.find(x => x.id == id);
+      if (!label) return;
+      try {
+        const updated = await PUT(`/api/labels/${id}`, { name: label.name, color: e.target.value });
+        state.labels = state.labels.map(x => x.id == id ? updated : x);
+        renderLabelsList(); renderFilterChips(); renderCards();
+        toast('Label updated');
+      } catch(e) { toast(e.message,'error'); }
+    });
+    // Delete
+    row.querySelector('.icon-btn').addEventListener('click', async () => {
+      const id = l.id;
+      if (!confirm(`Delete label "${l.name}"?`)) return;
+      try {
+        await DELETE(`/api/labels/${id}`);
+        state.labels = state.labels.filter(x => x.id != id);
+        state.filterLabels.delete(id);
+        // Refresh cards labels
+        await loadCards();
+        renderLabelsList(); renderFilterChips(); renderCards();
+        toast('Label deleted');
+      } catch(e) { toast(e.message,'error'); }
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('create-label-btn').addEventListener('click', async () => {
+  const name  = document.getElementById('new-label-name').value.trim();
+  const color = document.getElementById('new-label-color').value;
+  if (!name) { toast('Label name required', 'error'); return; }
+  try {
+    const label = await POST('/api/labels', { name, color });
+    state.labels.push(label);
+    document.getElementById('new-label-name').value = '';
+    renderLabelsList(); renderFilterChips();
+    toast('Label created');
+  } catch(e) { toast(e.message,'error'); }
+});
+document.getElementById('new-label-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('create-label-btn').click();
+});
+
+['labels-modal-close','labels-modal-close2'].forEach(id =>
+  document.getElementById(id).addEventListener('click', () => closeModal('labels-modal-backdrop')));
+
+document.getElementById('btn-manage-labels').addEventListener('click', openLabelsModal);
+
+// ════════════════════════════════════════════
+//  Modal helpers
+// ════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Click outside closes
+['card-modal-backdrop','delete-modal-backdrop','labels-modal-backdrop'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target.id === id) closeModal(id);
+  });
+});
+// Esc
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['card-modal-backdrop','delete-modal-backdrop','labels-modal-backdrop'].forEach(closeModal);
+  }
+});
+
+// ════════════════════════════════════════════
+//  Add card buttons
+// ════════════════════════════════════════════
+document.getElementById('btn-add-card').addEventListener('click', () => openCardModal());
+document.getElementById('fab-add').addEventListener('click', () => openCardModal());
+
+// ════════════════════════════════════════════
+//  Search
+// ════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('input', e => {
+  state.search = e.target.value.trim();
+  renderCards();
+});
+
+// ════════════════════════════════════════════
+//  Data loading
+// ════════════════════════════════════════════
+async function loadCards() {
+  const cards = await GET('/api/cards');
+  state.cards = cards;
+}
+
+async function loadLabels() {
+  state.labels = await GET('/api/labels');
+}
+
+// ════════════════════════════════════════════
+//  Escape helpers
+// ════════════════════════════════════════════
+function escHtml(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escAttr(s) { return escHtml(s).replace(/'/g,'&#39;'); }
+
+// ════════════════════════════════════════════
+//  Boot
+// ════════════════════════════════════════════
+async function boot() {
+  document.getElementById('app').style.display = 'flex';
+
+  await checkAuth();
+  await Promise.all([loadCards(), loadLabels()]);
+
+  renderFilterChips();
+  renderCards();
+  runHealthChecks();
+
+  // Re-check health every 30s
+  setInterval(runHealthChecks, 30_000);
+}
+
+boot().catch(console.error);
+</script>
+</body>
+</html>

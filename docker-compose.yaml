@@ -1,0 +1,25 @@
+services:
+  hub:
+    build: .
+    container_name: webapp-hub
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - hub-data:/data
+    environment:
+      PORT: 80
+      DB_PATH: /data/hub.db
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:-admin}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
+    networks:
+      - hub-net
+
+volumes:
+  hub-data:
+    driver: local
+
+networks:
+  hub-net:
+    driver: bridge
